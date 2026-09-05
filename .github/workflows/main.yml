@@ -1,0 +1,37 @@
+name: Build EDIUS Auto Color OFX (x64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+
+      - name: Download OpenFX SDK headers
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/AcademySoftwareFoundation/openfx.git openfx
+
+      - name: Configure CMake x64
+        run: cmake -S . -B build -A x64
+
+      - name: Build Release x64
+        run: cmake --build build --config Release
+
+      - name: Prepare OFX package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package\EdiusAutoColor.ofx.bundle\Contents\Win64 | Out-Null
+          Copy-Item build\Release\EdiusAutoColor.dll package\EdiusAutoColor.ofx.bundle\Contents\Win64\EdiusAutoColor.ofx
+          Copy-Item build\Release\EdiusAutoColor.dll package\EdiusAutoColor.dll
+
+      - name: Upload DLL and OFX bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: EdiusAutoColor-x64
+          path: package
